@@ -270,7 +270,6 @@ def check_stability(logger, repeat_loop=10, repeat_restart=5, chaos_mode=True, m
             logger.info("::: Test verification is taking too long: Giving up!")
             logger.info("::: So far, all checks passed, but not all checks were run.")
             write_summary(logger, step_results, "TIMEOUT")
-            write_duration(logger, longest_duration)
             return 2
 
         logger.info(':::')
@@ -290,7 +289,8 @@ def check_stability(logger, repeat_loop=10, repeat_restart=5, chaos_mode=True, m
         max_duration = 5000  # TODO: set to 30000 if timeout=long
         if longest_duration > max_duration:
             step_results.append((desc, "FAIL"))
-            logger.info('::: Test results were consistent but longest duration was %sms (expected < %sms).' % (longest_duration, max_duration))
+            logger.info('::: Test results were consistent but longest duration was %sms (expected < %sms).' % (longest_duration,
+                                                                                                               max_duration))
             return 1
 
         write_duration(logger, longest_duration)
