@@ -286,7 +286,7 @@ def check_stability(logger, repeat_loop=10, repeat_restart=5, chaos_mode=True, m
             write_duration(logger, longest_duration)
             return 1
 
-        max_duration = 5000  # TODO: set to 30000 if timeout=long
+        max_duration = 30000  # TODO: use shorter timeout except for timeout=long
         if longest_duration > max_duration:
             step_results.append((desc, "FAIL"))
             logger.info('::: Test results were consistent but longest duration was %sms (expected < %sms).' % (longest_duration,
