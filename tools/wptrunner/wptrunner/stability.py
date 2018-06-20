@@ -88,6 +88,7 @@ class LogHandler(reader.LogHandler):
         test["status"][data["status"]] += 1
         start_time = test.pop("start_time")
         test["duration"] = data["time"] - start_time
+        test["timeout"] = data["extra"]["test_timeout"]
 
 
 def is_inconsistent(results_dict, iterations):
@@ -112,7 +113,7 @@ def process_results(log, iterations):
                 inconsistent.append((test_name, subtest_name, subtest["status"], subtest["messages"]))
         if test["duration"] > longest_duration:
             longest_duration = test["duration"]
-    return results, inconsistent, longest_duration
+    return results, inconsistent, longest_duration, test["timeout"]
 
 
 def err_string(results_dict, iterations):
@@ -211,8 +212,8 @@ def run_step(logger, iterations, restart_after_iteration, kwargs_extras, **kwarg
     logger._state.suite_started = False
 
     log.seek(0)
-    results, inconsistent, longest_duration = process_results(log, iterations)
-    return results, inconsistent, longest_duration, iterations
+    results, inconsistent, longest_duration, timeout = process_results(log, iterations)
+    return results, inconsistent, longest_duration, timeout, iterations
 
 
 def get_steps(logger, repeat_loop, repeat_restart, kwargs_extras):
@@ -275,7 +276,7 @@ def check_stability(logger, repeat_loop=10, repeat_restart=5, chaos_mode=True, m
         logger.info(':::')
         logger.info('::: Running test verification step "%s"...' % desc)
         logger.info(':::')
-        results, inconsistent, longest_duration, iterations = step_func(**kwargs)
+        results, inconsistent, longest_duration, timeout, iterations = step_func(**kwargs)
         if output_results:
             write_results(logger.info, results, iterations)
 
@@ -286,7 +287,7 @@ def check_stability(logger, repeat_loop=10, repeat_restart=5, chaos_mode=True, m
             write_duration(logger, longest_duration)
             return 1
 
-        max_duration = 30000  # TODO: use shorter timeout except for timeout=long
+        max_duration = timeout * 1000 * 0.8
         if longest_duration > max_duration:
             step_results.append((desc, "FAIL"))
             logger.info('::: Test results were consistent but longest duration was %sms (expected < %sms).' % (longest_duration,

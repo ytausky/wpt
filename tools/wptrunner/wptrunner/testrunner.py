@@ -582,6 +582,10 @@ class TestRunnerManager(threading.Thread):
         if status == "CRASH":
             self.browser.log_crash(test.id)
 
+        if not file_result.extra:
+            file_result.extra = { "test_timeout": test.timeout }
+        else:
+            file_result.extra.test_timeout = test.timeout
         self.logger.test_end(test.id,
                              status,
                              message=file_result.message,
