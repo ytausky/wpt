@@ -8,7 +8,6 @@ from wptserve.request import InputFile
 
 
 class TestInputFile(TestUsingServer):
-    @pytest.mark.xfail(sys.version_info >= (3,), reason="wptserve only works on Py2")
     def test_seek(self):
         @wptserve.handlers.handler
         def handler(request, response):
@@ -16,28 +15,27 @@ class TestInputFile(TestUsingServer):
             f = request.raw_input
             f.seek(5)
             rv.append(f.read(2))
-            rv.append(f.tell())
+            rv.append(b"%d" % f.tell())
             f.seek(0)
             rv.append(f.readline())
-            rv.append(f.tell())
+            rv.append(b"%d" % f.tell())
             rv.append(f.read(-1))
-            rv.append(f.tell())
+            rv.append(b"%d" % f.tell())
             f.seek(0)
             rv.append(f.read())
             f.seek(0)
             rv.extend(f.readlines())
 
-            return " ".join(str(item) for item in rv)
+            return b" ".join(rv)
 
         route = ("POST", "/test/test_seek", handler)
         self.server.router.register(*route)
-        resp = self.request(route[1], method="POST", body="12345ab\ncdef")
+        resp = self.request(route[1], method="POST", body=b"12345ab\ncdef")
         self.assertEqual(200, resp.getcode())
-        self.assertEqual(["ab", "7", "12345ab\n", "8", "cdef", "12",
-                          "12345ab\ncdef", "12345ab\n", "cdef"],
-                         resp.read().split(" "))
+        self.assertEqual([b"ab", b"7", b"12345ab\n", b"8", b"cdef", b"12",
+                          b"12345ab\ncdef", b"12345ab\n", b"cdef"],
+                         resp.read().split(b" "))
 
-    @pytest.mark.xfail(sys.version_info >= (3,), reason="wptserve only works on Py2")
     def test_seek_input_longer_than_buffer(self):
         @wptserve.handlers.handler
         def handler(request, response):
@@ -45,11 +43,11 @@ class TestInputFile(TestUsingServer):
             f = request.raw_input
             f.seek(5)
             rv.append(f.read(2))
-            rv.append(f.tell())
+            rv.append(b"%d" % f.tell())
             f.seek(0)
-            rv.append(f.tell())
-            rv.append(f.tell())
-            return " ".join(str(item) for item in rv)
+            rv.append(b"%d" % f.tell())
+            rv.append(b"%d" % f.tell())
+            return b" ".join(rv)
 
         route = ("POST", "/test/test_seek", handler)
         self.server.router.register(*route)
@@ -57,32 +55,30 @@ class TestInputFile(TestUsingServer):
         old_max_buf = InputFile.max_buffer_size
         InputFile.max_buffer_size = 10
         try:
-            resp = self.request(route[1], method="POST", body="1"*20)
+            resp = self.request(route[1], method="POST", body=b"1"*20)
             self.assertEqual(200, resp.getcode())
-            self.assertEqual(["11", "7", "0", "0"],
-                            resp.read().split(" "))
+            self.assertEqual([b"11", b"7", b"0", b"0"],
+                             resp.read().split(b" "))
         finally:
             InputFile.max_buffer_size = old_max_buf
 
-    @pytest.mark.xfail(sys.version_info >= (3,), reason="wptserve only works on Py2")
     def test_iter(self):
         @wptserve.handlers.handler
         def handler(request, response):
             f = request.raw_input
-            return " ".join(line for line in f)
+            return b" ".join(line for line in f)
 
         route = ("POST", "/test/test_iter", handler)
         self.server.router.register(*route)
-        resp = self.request(route[1], method="POST", body="12345\nabcdef\r\nzyxwv")
+        resp = self.request(route[1], method="POST", body=b"12345\nabcdef\r\nzyxwv")
         self.assertEqual(200, resp.getcode())
-        self.assertEqual(["12345\n", "abcdef\r\n", "zyxwv"], resp.read().split(" "))
+        self.assertEqual([b"12345\n", b"abcdef\r\n", b"zyxwv"], resp.read().split(b" "))
 
-    @pytest.mark.xfail(sys.version_info >= (3,), reason="wptserve only works on Py2")
     def test_iter_input_longer_than_buffer(self):
         @wptserve.handlers.handler
         def handler(request, response):
             f = request.raw_input
-            return " ".join(line for line in f)
+            return b" ".join(line for line in f)
 
         route = ("POST", "/test/test_iter", handler)
         self.server.router.register(*route)
@@ -90,15 +86,14 @@ class TestInputFile(TestUsingServer):
         old_max_buf = InputFile.max_buffer_size
         InputFile.max_buffer_size = 10
         try:
-            resp = self.request(route[1], method="POST", body="12345\nabcdef\r\nzyxwv")
+            resp = self.request(route[1], method="POST", body=b"12345\nabcdef\r\nzyxwv")
             self.assertEqual(200, resp.getcode())
-            self.assertEqual(["12345\n", "abcdef\r\n", "zyxwv"], resp.read().split(" "))
+            self.assertEqual([b"12345\n", b"abcdef\r\n", b"zyxwv"], resp.read().split(b" "))
         finally:
             InputFile.max_buffer_size = old_max_buf
 
 
 class TestRequest(TestUsingServer):
-    @pytest.mark.xfail(sys.version_info >= (3,), reason="wptserve only works on Py2")
     def test_body(self):
         @wptserve.handlers.handler
         def handler(request, response):
@@ -107,10 +102,9 @@ class TestRequest(TestUsingServer):
 
         route = ("POST", "/test/test_body", handler)
         self.server.router.register(*route)
-        resp = self.request(route[1], method="POST", body="12345ab\ncdef")
-        self.assertEqual("12345ab\ncdef", resp.read())
+        resp = self.request(route[1], method="POST", body=b"12345ab\ncdef")
+        self.assertEqual(b"12345ab\ncdef", resp.read())
 
-    @pytest.mark.xfail(sys.version_info >= (3,), reason="wptserve only works on Py2")
     def test_route_match(self):
         @wptserve.handlers.handler
         def handler(request, response):
@@ -119,7 +113,7 @@ class TestRequest(TestUsingServer):
         route = ("GET", "/test/{match}_*", handler)
         self.server.router.register(*route)
         resp = self.request("/test/some_route")
-        self.assertEqual("some route", resp.read())
+        self.assertEqual(b"some route", resp.read())
 
 
 class TestAuth(TestUsingServer):
