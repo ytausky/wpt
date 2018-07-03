@@ -65,6 +65,6 @@ class TestUsingServer(unittest.TestCase):
             req.add_data(body)
 
         if auth is not None:
-            req.add_header("Authorization", "Basic %s" % base64.b64encode('%s:%s' % auth))
+            req.add_header("Authorization", b"Basic %s" % base64.b64encode(("%s:%s" % auth).encode("utf-8")))
 
         return urlopen(req)
