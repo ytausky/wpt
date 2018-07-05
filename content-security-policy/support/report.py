@@ -7,6 +7,7 @@ def retrieve_from_stash(request, key, timeout, default_value):
   while time.time() - t0 < timeout:
     time.sleep(0.5)
     value = request.server.stash.take(key=key)
+
     if value is not None:
       return value
 
