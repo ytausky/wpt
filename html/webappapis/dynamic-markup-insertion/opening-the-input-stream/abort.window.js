@@ -13,4 +13,20 @@ async_test(t => {
     frame.contentDocument.open();
     happened = true;
   });
-}, "document.open() and aborting documents");
+}, "document.open() and aborting documents (XMLHttpRequest)");
+
+async_test(t => {
+  const frame = document.body.appendChild(document.createElement("iframe"));
+  frame.src = "/common/blank.html";
+  frame.onload = t.step_func(() => {
+    let happened = false;
+    frame.contentWindow.fetch("/common/blank.html").then(
+      t.unreached_func("Fetch should have been aborted"),
+      t.step_func_done(err => {
+        assert_true(happened);
+        frame.contentDocument.close();
+      }));
+    frame.contentDocument.open();
+    happened = true;
+  });
+}, "document.open() and aborting documents (fetch())");
