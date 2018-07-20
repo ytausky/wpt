@@ -36,6 +36,23 @@ async_test(t => {
 }, "document.open() and aborting documents (fetch())");
 
 async_test(t => {
+  const frame = document.body.appendChild(document.createElement("iframe"));
+  t.add_cleanup(() => frame.remove());
+  frame.src = "/common/blank.html";
+  frame.onload = t.step_func(() => {
+    let happened = false;
+    const img = frame.contentDocument.createElement("img");
+    img.src = new URL("resources/slow-png.py", document.URL);
+    img.onload = t.step_func_done(() => {
+      assert_true(happened);
+    });
+    img.onerror = t.unreached_func("Image loading should not have errored");
+    frame.contentDocument.open();
+    happened = true;
+  });
+}, "document.open() and aborting documents (image loading)");
+
+async_test(t => {
   const __SERVER__NAME = "{{host}}";
   const __PORT = {{ports[ws][0]}};
   const frame = document.body.appendChild(document.createElement("iframe"));
