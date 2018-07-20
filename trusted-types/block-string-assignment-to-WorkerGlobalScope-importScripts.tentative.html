@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="/resources/testharness.js"></script>
+  <script src="/resources/testharnessreport.js"></script>
+
+  <meta http-equiv="Content-Security-Policy" content="require-trusted-types">
+</head>
+<body>
+<script>
+  //helper function for the tests
+  function NewWorker(url, message, t) {
+    var worker = new Worker(url);
+    worker.onmessage = t.step_func_done(e => {
+      assert_equals(e.data, message);
+    });
+    worker.postMessage("ping");
+  }
+
+  //ScriptURL assignments do not throw
+  async_test(t => {
+    var url = "support/importScripts-from-trusted-script-URL.js";
+    NewWorker(url, "Pass", t);
+  }, "importScripts from TrustedScriptURL, unsafe creation.");
+
+  //String assignments throw
+  async_test(t => {
+    var url = "support/importScripts-from-string.js";
+      NewWorker(url, "Type Error", t);
+  }, "`importScripts(string)` throws.");
+
+  //Null assignments throw
+  async_test(t => {
+    var url = "support/importScripts-from-null.js";
+    NewWorker(url, "Type Error", t);
+  }, "`importScripts(null)` throws.");
+</script>
