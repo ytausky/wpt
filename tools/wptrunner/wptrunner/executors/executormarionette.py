@@ -797,7 +797,7 @@ class MarionetteRefTestExecutor(RefTestExecutor):
         return screenshot
 
 
-class InternalRefTestImplementation(object):
+class InternalRefTestImplementation(RefTestImplementation):
     def __init__(self, executor):
         self.timeout_multiplier = executor.timeout_multiplier
         self.executor = executor
@@ -816,7 +816,7 @@ class InternalRefTestImplementation(object):
         self.executor.protocol.marionette._send_message("reftest:setup", data)
 
     def run_test(self, test):
-        references = self.get_references(test)
+        references = self.get_references(test, test)
         rv = self.executor.protocol.marionette._send_message("reftest:run",
                                                              {"test": self.executor.test_url(test),
                                                               "references": references,
@@ -824,10 +824,11 @@ class InternalRefTestImplementation(object):
                                                               "timeout": test.timeout * 1000})["value"]
         return rv
 
-    def get_references(self, node):
+    def get_references(self, root_test, node):
         rv = []
         for item, relation in node.references:
-            rv.append([self.executor.test_url(item), self.get_references(item), relation])
+            rv.append([self.executor.test_url(item), self.get_references(root_test, item), relation,
+                       {"fuzzy": self.get_fuzzy(root_test, [node, item], relation)}])
         return rv
 
     def teardown(self):
