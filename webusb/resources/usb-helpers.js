@@ -41,11 +41,18 @@ let loadChromiumResources = Promise.resolve().then(() => {
   return chain;
 });
 
+// Load the WebUSB Testing API and resolve if one is successfully loaded.
+function loadResources() {
+  return new Promise(resolve => {
+    loadChromiumResources.then(() => resolve());
+  });
+}
+
 function usb_test(func, name, properties) {
   promise_test(async () => {
     if (navigator.usb.test === undefined) {
       // Try loading a polyfill for the WebUSB Testing API.
-      await loadChromiumResources;
+      await loadResources();
     }
 
     await navigator.usb.test.initialize();

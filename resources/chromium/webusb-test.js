@@ -510,6 +510,69 @@ class USBTest {
     await otherWindow.navigator.usb.getDevices();
   }
 
+  // Returns a promise that is resolved when the worker finishes setting up the
+  // interface interceptors. This function must be called from the worker.
+  async attachToWindow() {
+    if (!WorkerGlobalScope)
+      return;
+
+    return new Promise(resolve => {
+      onmessage = async (messageEvent) => {
+        if (messageEvent.data.type === 'SetUpInterceptors') {
+          // Transfer the request handle for UsbDeviceManager and
+          // UsbChooserService to the window context on WebUSB interface
+          // request.
+          let deviceManagerInterceptor = new MojoInterfaceInterceptor(
+            device.mojom.UsbDeviceManager.name);
+          deviceManagerInterceptor.oninterfacerequest = e => postMessage({
+            type: 'DeviceManagerInterfaceRequest',
+            handle: e.handle
+          }, [e.handle]);
+          deviceManagerInterceptor.start();
+
+          let chooserServiceInterceptor = new MojoInterfaceInterceptor(
+            device.mojom.UsbChooserService.name);
+          chooserServiceInterceptor.oninterfacerequest = e => postMessage({
+            type: 'ChooserServiceInterfaceRequest',
+            handle: e.handle
+          }, [e.handle]);
+          chooserServiceInterceptor.start();
+
+          // Wait for a call to GetDevices() to pass between the renderer and
+          // the mock before notifying the window context in order to establish
+          // that everything is set up.
+          await navigator.usb.getDevices();
+          postMessage({ type: 'InterceptorsSetUp' });
+          resolve();
+        }
+      };
+      postMessage({ type: 'ReadyToAttach' });
+    });
+  }
+
+  async attachToWorker(worker) {
+    if (!internal.initialized)
+      throw new Error('Call initialize() before attachToWorker()');
+
+    return new Promise(resolve  => {
+      worker.addEventListener('message', messageEvent => {
+        switch (messageEvent.data.type) {
+          case 'ReadyToAttach':
+            worker.postMessage({ type: 'SetUpInterceptors' });
+          case 'InterceptorsSetUp':
+            resolve();
+            break;
+          case 'DeviceManagerInterfaceRequest':
+            internal.deviceManager.addBinding(messageEvent.data.handle);
+            break;
+          case 'ChooserServiceInterfaceRequest':
+            internal.chooserService.addBinding(messageEvent.data.handle);
+            break;
+        }
+      });
+    });
+  }
+
   addFakeDevice(deviceInit) {
     if (!internal.initialized)
       throw new Error('Call initialize() before addFakeDevice().');
