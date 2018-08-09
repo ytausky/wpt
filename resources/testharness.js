@@ -1056,6 +1056,37 @@ policies and contribution forms [3].
     }
     expose(assert_array_equals, "assert_array_equals");
 
+    function assert_array_members_are_same(actual, expected, description)
+    {
+      assert(typeof actual === "object" && actual !== null && "length" in actual
+             && "sort" in actual && "sort" in expected,
+             "assert_array_members_are_same", description,
+             "value is ${actual}, expected array",
+             {actual:actual});
+      assert(actual.length === expected.length,
+             "assert_array_members_are_same", description,
+             "lengths differ, expected ${expected} got ${actual}",
+             {expected:expected.length, actual:actual.length});
+
+      for (var i = 0; i < actual.length; i++) {
+            assert(actual.hasOwnProperty(i) === expected.hasOwnProperty(i),
+                   "assert_array_members_are_same", description,
+                   "property ${i}, property expected to be ${expected} but was ${actual}",
+                   {i:i, expected:expected.hasOwnProperty(i) ? "present" : "missing",
+                   actual:actual.hasOwnProperty(i) ? "present" : "missing"});
+      }
+
+      let sorted_actual = actual.sort();
+      let sorted_expected = expected.sort();
+      for (var i = 0; i < sorted_actual.length; ++i) {
+        assert(same_value(sorted_expected[i], sorted_actual[i]),
+                   "assert_array_members_are_same", description,
+                   "property ${i}, expected ${expected} but got ${actual}",
+                   {i:i, expected:sorted_expected[i], actual:sorted_actual[i]});
+      }
+    }
+    expose(assert_array_members_are_same, "assert_array_members_are_same");
+
     function assert_array_approx_equals(actual, expected, epsilon, description)
     {
         /*
